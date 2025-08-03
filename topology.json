@@ -1,0 +1,110 @@
+{
+  "resources": {
+    "VPC": {
+      "Name": "ZSR_PHP-Web-Server-VPC",
+      "CIDR": "10.0.0.0/16",
+      "Region": "eu-west-3"
+    },
+    "Subnet": {
+      "Name": "ZSR_PHP-Web-Server-Subnet",
+      "CIDR": "10.0.1.0/24",
+      "AvailabilityZone": "eu-west-3",
+      "ParentVPC": "ZSR_PHP-Web-Server-VPC",
+      "AutoAssignPublicIP": true
+    },
+    "InternetGateway": {
+      "Name": "ZSR_PHP-Web-Server-IGW",
+      "AttachedToVPC": "ZSR_PHP-Web-Server-VPC"
+    },
+    "RouteTable": {
+      "Name": "ZSR_PHP-Web-Server-RouteTable",
+      "ParentVPC": "ZSR_PHP-Web-Server-VPC",
+      "Routes": [
+        {
+          "Destination": "0.0.0.0/0",
+          "Target": "ZSR_PHP-Web-Server-IGW"
+        }
+      ],
+      "AssociatedSubnet": "ZSR_PHP-Web-Server-Subnet"
+    },
+    "SecurityGroup": {
+      "Name": "ZSR_php-web-sg-{timestamp}",
+      "Description": "Security group for PHP web server",
+      "ParentVPC": "ZSR_PHP-Web-Server-VPC",
+      "InboundRules": [
+        {
+          "Protocol": "TCP",
+          "Port": 80,
+          "Source": "0.0.0.0/0",
+          "Description": "HTTP"
+        },
+        {
+          "Protocol": "TCP",
+          "Port": 22,
+          "Source": "0.0.0.0/0",
+          "Description": "SSH"
+        }
+      ],
+      "OutboundRules": [
+        {
+          "Protocol": "All",
+          "Destination": "0.0.0.0/0"
+        }
+      ]
+    },
+    "KeyPair": {
+      "Name": "php-web-keypair-{timestamp}"
+    },
+    "IAMRole": {
+      "Name": "ZSR_CloudWatchAgentRole-{timestamp}",
+      "Policy": "CloudWatchAgentServerPolicy",
+      "InstanceProfile": "ZSR_CloudWatchAgentRole-{timestamp}",
+      "TrustedEntity": "ec2.amazonaws.com"
+    },
+    "EC2Instance": {
+      "Name": "ZSR_PHP-Web-Server",
+      "InstanceType": "t2.micro",
+      "AMI": "Dynamic (latest Amazon Linux 2, x86_64)",
+      "KeyPair": "ZSR_php-web-keypair-{timestamp}",
+      "SecurityGroup": "ZSR_php-web-sg-{timestamp}",
+      "Subnet": "ZSR_PHP-Web-Server-Subnet",
+      "AssociatePublicIP": true,
+      "IAMInstanceProfile": "ZSR_CloudWatchAgentRole-{timestamp}",
+      "UserData": {
+        "Actions": [
+          "Install Apache and PHP",
+          "Start and enable httpd",
+          "Create /var/www/html/index.php with phpinfo()",
+          "Install CloudWatch Agent",
+          "Configure CloudWatch Agent for CPU/memory metrics and Apache error logs"
+        ]
+      }
+    },
+    "CloudWatch": {
+      "Metrics": {
+        "Namespace": "ZSR_PHP-Web-Server",
+        "Collected": [
+          {
+            "Name": "cpu",
+            "Measurements": ["cpu_usage_active", "cpu_usage_idle"],
+            "TotalCPU": true
+          },
+          {
+            "Name": "mem",
+            "Measurements": ["mem_used_percent"]
+          }
+        ],
+        "CollectionInterval": 60
+      },
+      "Logs": {
+        "LogGroup": "ZSR_php-web-server-logs",
+        "LogStream": "{instance_id}",
+        "FilePath": "/var/log/httpd/error_log"
+      }
+    }
+  },
+  "termination": {
+    "Delay": "300 seconds",
+    "Action": "Terminate EC2 instance and delete all resources"
+  }
+}
