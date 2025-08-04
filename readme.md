@@ -11,6 +11,10 @@ This Bash script automates the full lifecycle of an AWS environment for running 
 - Installs and configures CloudWatch Agent for logging and monitoring
 - Waits (default 120s), then terminates the instance and deletes all created resources
 
+## Topology 
+
+![Topology](topology.png)
+
 ## Requirements
 
 - AWS CLI configured (`aws configure`)
@@ -44,3 +48,4 @@ Designed for demo/testing purposes, not production use
 
 ## License
 MIT
+
