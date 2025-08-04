@@ -42,33 +42,32 @@ aws ec2 create-tags --resources "$SUBNET_ID" --tags Key=Name,Value=$TAG_NAME-Sub
 echo "Created Subnet: $SUBNET_ID"
 
 # NACL 
-# Create NACL
 NACL_ID=$(aws ec2 create-network-acl --vpc-id "$VPC_ID" --region "$REGION" --query 'NetworkAcl.NetworkAclId' --output text)
 aws ec2 create-tags --resources "$NACL_ID" --tags Key=Name,Value=$TAG_NAME-NACL
 echo "Created Network ACL: $NACL_ID"
 
-# Inbound: allow SSH (22)
+# Inbound: SSH (22)
 aws ec2 create-network-acl-entry --network-acl-id "$NACL_ID" --ingress --rule-number 100 --protocol tcp --port-range From=22,To=22 --cidr-block 0.0.0.0/0 --rule-action allow
 
-# Inbound: allow HTTP (80)
+# Inbound: HTTP (80)
 aws ec2 create-network-acl-entry --network-acl-id "$NACL_ID" --ingress --rule-number 110 --protocol tcp --port-range From=80,To=80 --cidr-block 0.0.0.0/0 --rule-action allow
 
-# Inbound: allow HTTPS (443)
+# Inbound: HTTPS (443)
 aws ec2 create-network-acl-entry --network-acl-id "$NACL_ID" --ingress --rule-number 120 --protocol tcp --port-range From=443,To=443 --cidr-block 0.0.0.0/0 --rule-action allow
 
-# Inbound: allow ephemeral ports (1024–65535)
+# Inbound: all additional ports (1024–65535)
 aws ec2 create-network-acl-entry --network-acl-id "$NACL_ID" --ingress --rule-number 130 --protocol tcp --port-range From=1024,To=65535 --cidr-block 0.0.0.0/0 --rule-action allow
 
-# Outbound: allow HTTP (80)
+# Outbound: all additional HTTP (80)
 aws ec2 create-network-acl-entry --network-acl-id "$NACL_ID" --egress --rule-number 100 --protocol tcp --port-range From=80,To=80 --cidr-block 0.0.0.0/0 --rule-action allow
 
-# Outbound: allow HTTPS (443)
+# Outbound: HTTPS (443)
 aws ec2 create-network-acl-entry --network-acl-id "$NACL_ID" --egress --rule-number 110 --protocol tcp --port-range From=443,To=443 --cidr-block 0.0.0.0/0 --rule-action allow
 
-# Outbound: allow SSH (22)
+# Outbound: SSH (22)
 aws ec2 create-network-acl-entry --network-acl-id "$NACL_ID" --egress --rule-number 120 --protocol tcp --port-range From=22,To=22 --cidr-block 0.0.0.0/0 --rule-action allow
 
-# Outbound: allow ephemeral ports (1024–65535)
+# Outbound: all additional ports (1024–65535)
 aws ec2 create-network-acl-entry --network-acl-id "$NACL_ID" --egress --rule-number 130 --protocol tcp --port-range From=1024,To=65535 --cidr-block 0.0.0.0/0 --rule-action allow
 
 
@@ -241,7 +240,7 @@ aws ec2 terminate-instances --instance-ids "$INSTANCE_ID" --region "$REGION"
 aws ec2 wait instance-terminated --instance-ids "$INSTANCE_ID" --region "$REGION"
 echo "Terminated EC2 Instance: $INSTANCE_ID"
 
-# Delete CloudWatch Log Groups (optional)
+# Delete CloudWatch Log Groups
 aws logs delete-log-group --log-group-name ZSR_PHP_Web_Access_Log --region "$REGION" || echo "Log group ZSR_PHP_Web_Access_Log not found"
 aws logs delete-log-group --log-group-name ZSR_PHP_Web_Error_Log --region "$REGION" || echo "Log group ZSR_PHP_Web_Error_Log not found"
 echo "Deleted CloudWatch Log Groups"
@@ -269,25 +268,25 @@ aws ec2 detach-internet-gateway --internet-gateway-id "$IGW_ID" --vpc-id "$VPC_I
 aws ec2 delete-internet-gateway --internet-gateway-id "$IGW_ID" --region  "$REGION"
 echo "Deleted Internet Gateway: $IGW_ID"
 
-#subnet
+#Subnet
 aws ec2 delete-subnet --subnet-id "$SUBNET_ID" --region "$REGION"
 echo "Deleted subnet: $SUBNET_ID"
 
-#secgroup
+#Secgroup
 aws ec2 delete-security-group --group-id "$SECURITY_GROUP_ID" --region "$REGION"
 echo "Deleted Security Group: $SECURITY_GROUP_ID"
 
-#vpc
+#Vpc
 aws ec2 delete-vpc --vpc-id "$VPC_ID" --region "$REGION"
 echo "Deleted VPC: $VPC_ID"
 
-#iam 
+#Iam 
 aws iam remove-role-from-instance-profile --instance-profile-name "$IAM_ROLE_NAME" --role-name "$IAM_ROLE_NAME"
 aws iam delete-instance-profile --instance-profile-name "$IAM_ROLE_NAME"
 aws iam detach-role-policy --role-name "$IAM_ROLE_NAME" --policy-arn arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy
 aws iam delete-role --role-name "$IAM_ROLE_NAME"
 
-#key pair
+#Key pair
 aws ec2 delete-key-pair --key-name "$KEY_PAIR_NAME" --region "$REGION"
 rm -f "$KEY_PAIR_NAME.pem"
 rm -f trust-policy.json
